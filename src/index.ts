@@ -1,22 +1,15 @@
-import { ConversationReference, MessageSendActivity } from '@teams.sdk/api';
+import { MessageSendActivity } from '@teams.sdk/api';
 import { App, HttpPlugin } from '@teams.sdk/apps';
-import { Client, LocalStorage } from '@teams.sdk/common';
+import { Client } from '@teams.sdk/common/http';
 import { DevtoolsPlugin } from '@teams.sdk/dev';
 
 import * as cards from './cards';
 import { isReminder, Reminder } from './reminder';
 
-const storage = new LocalStorage<ConversationReference>();
 const server = new HttpPlugin();
 const http = new Client();
 const app = new App({
-  storage,
   plugins: [new DevtoolsPlugin(), server],
-});
-
-app.use(({ activity, ref, next }) => {
-  storage.set(activity.conversation.id, ref);
-  next();
 });
 
 app.message('remind', async ({ activity, api, send }) => {
@@ -48,8 +41,7 @@ app.on('conversationUpdate', async ({ activity, send }) => {
   }
 });
 
-app.on('install.add', async ({ activity, ref, send }) => {
-  storage.set(activity.conversation.id, ref);
+app.on('install.add', async ({ activity, send }) => {
   await send(MessageSendActivity('').card('adaptive', cards.intro(activity.from)).build());
 });
 
@@ -85,10 +77,6 @@ server.post('/api/remind', (req, res) => {
 })();
 
 async function remindWithDelay(body: Reminder) {
-  const ref = storage.get(body.conversationId);
-
-  if (!ref) return;
-
   // wait for the number of seconds before sending the proactive message
   await new Promise((resolve) => setTimeout(resolve, body.delaySeconds * 1000));
 
@@ -99,5 +87,5 @@ async function remindWithDelay(body: Reminder) {
       role: 'user',
     }).build();
 
-  await app.api.conversations.activities(ref.conversation.id).create(message);
+  await app.api.conversations.activities(body.conversationId).create(message);
 }
