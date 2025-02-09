@@ -32,6 +32,12 @@
     {
       "entityId": "about",
       "scopes": ["personal"]
+    },
+    {
+      "entityId": "test",
+      "name": "My Test Tab",
+      "contentUrl": "https://social-ai.ngrok.io/tabs/test",
+      "scopes": ["personal"]
     }
   ],
   "bots": [
